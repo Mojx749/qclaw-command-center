@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>招链通指挥台</title>
+    <title>QClaw 统一指挥中心</title>
     <style>
         * {
             margin: 0;
@@ -93,10 +93,6 @@
             color: #10b981;
         }
         
-        .card-change.down {
-            color: #ef4444;
-        }
-        
         .section {
             background: white;
             border-radius: 16px;
@@ -131,10 +127,6 @@
             color: #555;
         }
         
-        .data-table tr:hover {
-            background: #f8f9fa;
-        }
-        
         .status {
             display: inline-block;
             padding: 4px 12px;
@@ -151,11 +143,6 @@
         .status.pending {
             background: #fef3c7;
             color: #d97706;
-        }
-        
-        .status.inactive {
-            background: #fee2e2;
-            color: #dc2626;
         }
         
         .refresh-btn {
@@ -242,6 +229,39 @@
             color: #888;
         }
         
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-dot.online {
+            background: #10b981;
+        }
+        
+        .status-dot.offline {
+            background: #ef4444;
+        }
+        
         footer {
             text-align: center;
             color: white;
@@ -249,14 +269,34 @@
             padding: 20px;
             font-size: 0.9em;
         }
+        
+        .api-error {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🦞 招链通指挥台</h1>
-            <p>产业招商全流程数据中心</p>
+            <h1>🦞 QClaw 统一指挥中心</h1>
+            <p>多渠道会话 · 业务中枢 · 决策平台</p>
             <div class="time" id="currentTime">加载中...</div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot online" id="apiStatus"></span>
+                <span id="apiStatusText">数据加载中...</span>
+            </div>
+            <div class="status-item">
+                <span>数据更新: </span>
+                <span id="updateTime">-</span>
+            </div>
         </div>
         
         <div style="text-align: center; margin-bottom: 30px;">
@@ -270,42 +310,42 @@
                 <div class="card-icon">👥</div>
                 <div class="card-title">客户线索</div>
                 <div class="card-value" id="customerCount">-</div>
-                <div class="card-change up" id="customerChange">📈 本月新增</div>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon">📋</div>
-                <div class="card-title">工商注册</div>
-                <div class="card-value" id="regCount">-</div>
-                <div class="card-change up" id="regChange">📈 进行中</div>
+                <div class="card-change up">📈 累计总数</div>
             </div>
             
             <div class="card">
                 <div class="card-icon">🏢</div>
                 <div class="card-title">房源库存</div>
                 <div class="card-value" id="propertyCount">-</div>
-                <div class="card-change" id="propertyChange">📊 可租售</div>
+                <div class="card-change">📊 可租售</div>
             </div>
             
             <div class="card">
-                <div class="card-icon">💰</div>
-                <div class="card-title">合同金额</div>
-                <div class="card-value" id="contractAmount">-</div>
-                <div class="card-change up" id="contractChange">📈 本季度</div>
+                <div class="card-icon">📝</div>
+                <div class="card-title">合同台账</div>
+                <div class="card-value" id="contractCount">-</div>
+                <div class="card-change up">📈 累计总数</div>
             </div>
             
             <div class="card">
                 <div class="card-icon">📅</div>
-                <div class="card-title">本月活动</div>
+                <div class="card-title">招商活动</div>
                 <div class="card-value" id="eventCount">-</div>
-                <div class="card-change" id="eventChange">📅 待执行</div>
+                <div class="card-change">📅 活动总数</div>
             </div>
             
             <div class="card">
                 <div class="card-icon">📰</div>
                 <div class="card-title">政策库</div>
                 <div class="card-value" id="policyCount">-</div>
-                <div class="card-change up" id="policyChange">✨ 可申报</div>
+                <div class="card-change up">✨ 政策总数</div>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon">💰</div>
+                <div class="card-title">营收台账</div>
+                <div class="card-value" id="revenueCount">-</div>
+                <div class="card-change">📊 合同总数</div>
             </div>
         </div>
         
@@ -315,32 +355,48 @@
                 <button class="action-btn" onclick="openFeishu('customers')">
                     <span class="action-icon">➕</span>
                     <div>
-                        <div class="action-text">新增客户线索</div>
-                        <div class="action-desc">录入新客户信息</div>
+                        <div class="action-text">客户线索池</div>
+                        <div class="action-desc">录入/管理客户</div>
                     </div>
                 </button>
                 
                 <button class="action-btn" onclick="openFeishu('properties')">
                     <span class="action-icon">🏠</span>
                     <div>
-                        <div class="action-text">管理房源</div>
-                        <div class="action-desc">查看/编辑房源</div>
+                        <div class="action-text">房源台账</div>
+                        <div class="action-desc">房源管理</div>
                     </div>
                 </button>
                 
                 <button class="action-btn" onclick="openFeishu('calendar')">
                     <span class="action-icon">📆</span>
                     <div>
-                        <div class="action-text">查看日程</div>
-                        <div class="action-desc">招商日历</div>
+                        <div class="action-text">招商日历</div>
+                        <div class="action-desc">活动安排</div>
                     </div>
                 </button>
                 
                 <button class="action-btn" onclick="openFeishu('contracts')">
-                    <span class="action-icon">📝</span>
+                    <span class="action-icon">📋</span>
                     <div>
-                        <div class="action-text">合同管理</div>
-                        <div class="action-desc">查看合同台账</div>
+                        <div class="action-text">合同台账</div>
+                        <div class="action-desc">合同管理</div>
+                    </div>
+                </button>
+                
+                <button class="action-btn" onclick="openFeishu('policies')">
+                    <span class="action-icon">📜</span>
+                    <div>
+                        <div class="action-text">政策库</div>
+                        <div class="action-desc">政策查询</div>
+                    </div>
+                </button>
+                
+                <button class="action-btn" onclick="openFeishu('revenue')">
+                    <span class="action-icon">💵</span>
+                    <div>
+                        <div class="action-text">营收台账</div>
+                        <div class="action-desc">营收统计</div>
                     </div>
                 </button>
             </div>
@@ -357,12 +413,11 @@
                             <th>来源渠道</th>
                             <th>跟进状态</th>
                             <th>跟进人员</th>
-                            <th>最近联系</th>
                         </tr>
                     </thead>
                     <tbody id="customerTableBody">
                         <tr>
-                            <td colspan="6" class="loading">
+                            <td colspan="5" class="loading">
                                 <div class="spinner"></div>
                                 <div>加载中...</div>
                             </td>
@@ -399,7 +454,7 @@
         </div>
         
         <footer>
-            <p>招链通指挥台 · 数据更新时间：<span id="updateTime">-</span></p>
+            <p>QClaw 统一指挥中心 · 数据更新时间：<span id="lastUpdate">-</span></p>
             <p>Powered by QClaw 🦞</p>
         </footer>
     </div>
@@ -421,70 +476,68 @@
         updateTime();
         setInterval(updateTime, 1000);
         
-        // 飞书 Bitable 应用 Token 配置
-        const BITABLE_TOKENS = {
-            customers: 'JxB8boQ9la945QsUh7ecpDyWnPe',    // 客户线索池
-            properties: 'NvqibXUrfaN7bTsC9YFcVTGAnab',  // 房源台账
-            calendar: 'BsDJbI91gaoGIpsSs5tc6aHxnae',    // 招商日历
-            policies: 'JqcnbUiv6aGVUEsrsmFc3k53nVc',     // 政策库
-            contracts: 'Fg6dbrv85axDVvsz713c80PRnoh'     // 合同台账
-        };
-        
-        // 飞书 API 基础 URL
-        const FEISHU_API = 'https://open.feishu.cn/open-apis';
+        // API 基础 URL
+        const API_BASE = '/api/bitable';
         
         // 加载所有数据
         async function loadAllData() {
-            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('zh-CN');
+            document.getElementById('apiStatusText').textContent = '数据加载中...';
+            document.getElementById('apiStatus').className = 'status-dot offline';
             
-            // 由于 Vercel 无法直接调用飞书 API，这里显示示例数据
-            // 实际使用时需要通过后端代理或飞书小程序
-            showDemoData();
+            try {
+                // 调用 API 获取统计数据
+                const response = await fetch(API_BASE);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 更新统计数据
+                    document.getElementById('customerCount').textContent = result.data.customers || 0;
+                    document.getElementById('propertyCount').textContent = result.data.properties || 0;
+                    document.getElementById('contractCount').textContent = result.data.contracts || 0;
+                    document.getElementById('eventCount').textContent = result.data.events || 0;
+                    document.getElementById('policyCount').textContent = result.data.policies || 0;
+                    document.getElementById('revenueCount').textContent = result.data.contracts || 0;
+                    
+                    // 更新状态
+                    document.getElementById('apiStatus').className = 'status-dot online';
+                    document.getElementById('apiStatusText').textContent = '数据已同步';
+                    document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('zh-CN');
+                    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('zh-CN');
+                    
+                    // 显示示例数据（后续可对接真实列表数据）
+                    showSampleData();
+                } else {
+                    throw new Error(result.error || '数据加载失败');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                document.getElementById('apiStatus').className = 'status-dot offline';
+                document.getElementById('apiStatusText').textContent = 'API 未配置或连接失败';
+                
+                // 显示示例数据作为降级
+                showSampleData();
+            }
         }
         
-        // 显示示例数据（实际部署时替换为真实 API 调用）
-        function showDemoData() {
-            // 客户线索
-            document.getElementById('customerCount').textContent = '12';
-            document.getElementById('customerChange').textContent = '📈 本月新增 3 条';
-            
-            // 工商注册
-            document.getElementById('regCount').textContent = '8';
-            document.getElementById('regChange').textContent = '📈 进行中 5 个';
-            
-            // 房源库存
-            document.getElementById('propertyCount').textContent = '45';
-            document.getElementById('propertyChange').textContent = '📊 可租售 32 套';
-            
-            // 合同金额
-            document.getElementById('contractAmount').textContent = '¥28.5万';
-            document.getElementById('contractChange').textContent = '📈 本季度';
-            
-            // 活动数量
-            document.getElementById('eventCount').textContent = '6';
-            document.getElementById('eventChange').textContent = '📅 待执行 3 场';
-            
-            // 政策库
-            document.getElementById('policyCount').textContent = '23';
-            document.getElementById('policyChange').textContent = '✨ 可申报 8 项';
-            
+        // 显示示例数据（临时方案）
+        function showSampleData() {
             // 最近客户线索
             const customers = [
-                { name: '深圳市某某科技有限公司', type: '工商注册', source: '产业活动', status: '跟进中', person: '张三', date: '2026-03-24' },
-                { name: '王五', type: '代理记账', source: '同行转介', status: '已签约', person: '李四', date: '2026-03-23' },
-                { name: '广州某某贸易公司', type: '写字楼租赁', source: '官网咨询', status: '需求确认中', person: '王六', date: '2026-03-22' }
+                { name: '深圳市某某科技有限公司', type: '工商注册', source: '产业活动', status: '跟进中', person: '张三' },
+                { name: '广州某某贸易公司', type: '写字楼租赁', source: '官网咨询', status: '需求确认中', person: '李四' },
+                { name: '王五', type: '代理记账', source: '同行转介', status: '已签约', person: '王六' }
             ];
             
             let customerHtml = '';
             customers.forEach(c => {
+                const statusClass = c.status === '已签约' ? 'active' : c.status === '跟进中' ? 'pending' : 'inactive';
                 customerHtml += `
                     <tr>
                         <td>${c.name}</td>
                         <td>${c.type}</td>
                         <td>${c.source}</td>
-                        <td><span class="status ${c.status === '已签约' ? 'active' : c.status === '跟进中' ? 'pending' : 'inactive'}">${c.status}</span></td>
+                        <td><span class="status ${statusClass}">${c.status}</span></td>
                         <td>${c.person}</td>
-                        <td>${c.date}</td>
                     </tr>
                 `;
             });
@@ -519,13 +572,18 @@
                 customers: 'https://dk2rhqh9t5.feishu.cn/base/JxB8boQ9la945QsUh7ecpDyWnPe',
                 properties: 'https://dk2rhqh9t5.feishu.cn/base/NvqibXUrfaN7bTsC9YFcVTGAnab',
                 calendar: 'https://dk2rhqh9t5.feishu.cn/base/BsDJbI91gaoGIpsSs5tc6aHxnae',
-                contracts: 'https://dk2rhqh9t5.feishu.cn/base/Fg6dbrv85axDVvsz713c80PRnoh'
+                contracts: 'https://dk2rhqh9t5.feishu.cn/base/Fg6dbrv85axDVvsz713c80PRnoh',
+                policies: 'https://dk2rhqh9t5.feishu.cn/base/JqcnbUiv6aGVUEsrsmFc3k53nVc',
+                revenue: 'https://dk2rhqh9t5.feishu.cn/base/NhA7bqMnBaVuN0sW3SlcTVnJnug'
             };
             window.open(urls[type], '_blank');
         }
         
         // 页面加载时获取数据
         window.onload = loadAllData;
+        
+        // 每5分钟自动刷新
+        setInterval(loadAllData, 5 * 60 * 1000);
     </script>
 </body>
 </html>
